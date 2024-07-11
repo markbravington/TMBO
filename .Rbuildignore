@@ -1,0 +1,3 @@
+[.]lyx
+\bR/funs[.]rda$
+(?i)\bvignettes/.*[.](lyx|rnw|Rnw)[^[:alnum:]]*$
