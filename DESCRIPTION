@@ -1,10 +1,10 @@
 Package: TMBO
 Title: Code helpers for TMB
-Version: 2.4.28
 Author: M.V. Bravington
 Description: Arrays/vectors from index 1 (or any offset you choose, like package 'offarray'), names and dimnames, useful non-crashy error messages, plus simple for-loop aliases. Nicer than raw TMB!
 Imports: tools, mvbutils, offarray, TMB
 LinkingTo: TMB
 SystemRequirements: C++20
-Maintainer: <markb2@summerinsouth.net>
+Maintainer: Mark V. Bravington <markb2@summerinsouth.net>
 License: GPL-2
+Version: 2.4.29
