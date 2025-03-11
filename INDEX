@@ -1,7 +1,6 @@
-TMBO-package                        R-style indexing and convenience for TMB
-compile                             Compile a TMB CPP file into dyn-load-able, using TMBO features
-MACROS                              C-side syntax of TMBO
-make_all_ELn                        Generate array macros
-MakeADFun                           Construct objective function and derivatives allowing general index
-                                    offsets
-runExample                          Run TMBO example
+TMBO-package                           R-style indexing and convenience for TMB
+compile                                Compile a TMB CPP file into dyn-load-able, using TMBO features
+MACROS                                 C-side syntax of TMBO
+make_all_ELn                           Generate array macros
+MakeADFun                              Construct objective function and derivatives allowing general index offsets
+runExample                             Run TMBO example

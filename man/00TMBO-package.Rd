@@ -63,6 +63,58 @@ Therefore, my \code{offarray} R{} package (from c. 2018) lets you index arrays e
 }
 
 where \code{C_ys[1988,"Male"]==6710; and in TMBO you could JUST refer to }C_ys(1988,Male_)'. And things coming out of REPORT() will have the correct offsets/names/dimnames in R{}. And so on.
+\subsection{Convenience macros}{
+TMBO's \code{FOR} loops are shorter & less error-prone than C++'s; see above. One other minor convenience of TMBO is that you can create & fill a vector with an \emph{unspecified} number of elements in one step. You can't actually do that
+
+with regular TMB, presumably for some crazy C++ "reason. IOW:
+
+\preformatted{
+  // this doesn't work, nor do plausible-looking alternatives
+  vector<Type> lglk_bits << 1,2,3
+  // ... you have to count the elements first, which is a bit annoying
+  // But this does work:
+    CREATE_AND_FILL_VECTORO( Type, lglk_bits, 1, // first index 1
+      LnL_POP,
+      LnL_XHSP,
+      LnL_margAge,
+      Lnprior_recdev,
+      Lnprior_n0dev,
+      Lnpen_fec_par
+    );
+}
+}
+\subsection{Vanilla r and tmb}{
+You might want to migrate existing "vanilla" R/C TMB code into TMBO. By "vanilla", I mean: using standard R{} 1-based things rather than \code{offarrays}, andbut having 0-based versions of them in TMB. Then a reasonable first step might be to simply change your new-variable declarations in C++ like so:
+
+\preformatted{
+  // vector<Type> stuff( n);     // original: change to
+  VECTORZ( Type, stuff, n);
+}
+
+Then \code{stuff[1]} in R{} will be \code{stuff(0)} in TMB, and conversely if you \code{REPORT(stuff)} from TMB back to R{}. You shouldn't need to change much else in your R{} or C code (except initialization statements at declaration).
+
+If instead you said \code{VECTORO(Type,stuff,(0,n))} instead, then \code{REPORT(stuff)} would generate an \code{offarray} in R{} where the first element is 'stuff[0].
+
+The matrix version is similar; for the array version, you (currently: v2.4.30) have to specify the dimension, a la
+
+\preformatted{
+  // array<Type> spaaace( 4, 12, 14);
+  ARRAYZ_3D( Type, spaaaace, 4, 12, 14);
+}
+
+You can also specify DATA and PARAMETER objects that way, eg \code{DATA_ARRAYZ(olde_style)}. You probably don't absolutely \emph{have} to do that, but OOB-trapping (for one thing) definitely won't work on those variables unless you do.
+}
+}
+\section{Summary of index options}{
+There are 3 types of TMBO VMA (vector/matrix/array), whose names end in different characters:
+
+\itemize{
+\item VECTOR1 etc: 1-based in both R{} and C. Does \emph{not} make \code{offarray} on \code{REPORT()}.
+\item VECTORO etc: arbitrary base index, in both R{} and TMB. \emph{Does} make \code{offarray} on \code{REPORT()}.
+\item VECTORZ etc: base-1 in R{}, base-0 in C. Does \emph{not} make \code{offarray}
+}
+
+Personally, I would only use the \code{Z}-versions during an initial conversion from existing TMB code; life is so much easier when the R{} and C base indices are the same.
 }
 \section{Functoids}{
 TMB does not make it easy (or, at least, does not actually tell you how) to define "nested" functions that can access/change variables in your objective function. People have sometimes used horrendously complicated things, apparently called "functors", to get round this.
@@ -94,8 +146,6 @@ It's a fair question, but I would say that TMBO is pretty safe and future-proof,
 3a. Actually, there is a bit of C code to access TMB's internal structures (array elements), but it's only activated when OOB-checking is on.
 
 4. You can always run \code{compile( <myTMBOfile>, ppcheck=TRUE)} to get legal TMB code that will subsequently work with "vanilla" TMB. It won't look pretty, and you will have to manually add some helper variables to \code{data=...} in R{}, to take care of offsets etc, but it will run. Even if you are using general offsets (non-1), you could if desperate get the TMB code to work without \code{offarray}.
-
-5. I do need to modify \code{offarray} at some point, to work around a bug in R{}'s byte-compiler, but there's a perfectly functional workaround in the package as it stands. (See \bold{Quirks}.)
 \subsection{Tmb code in packages}{
 \code{TMBO} is a very new package, and I've only tested it for standalone compilation (and only on Windows, mea culpa), not for incorporating your own TMB code into your own package. Presumably your DESCRIPTION file will need to say "Imports: TMB, TMBO" and your NAMESPACE file will need some simple mods. At present, the only "duplicated" functions from TMB itself are \code{\link{MakeADFun}}, \code{\link{compile}}, and \code{\link{runExample}}, but I might need to add other more-obscure ones over time. To avoid dull warnings, you'll need to \emph{not} import those from TMB itself. See "Writing R{} extensions" (sorry... there's no way around that!).
 
@@ -192,11 +242,10 @@ But with TMBO, you have to first declare offsetty variables in a single step, an
     blurble << pi, 2*pi, 4*pi;
 }
 
+Having said that, v2.4.30 has added a new feature
+
 2. Extractors such as \code{<vector>.segment()} \code{<matrix>.row(i)} and \code{<matrix>.col(i)} and \code{<matrix>.block(...)} still use zero-based indices. Although I probably could cook up some macros to fix that (eg \code{ROW(<matrix>,i)}) which would work whether \code{<matrix>} is TMBO or not), I doubt that those functions are used much in the context of 1-based or general-offset-based work. I'm not sure they even exist in TMB for arrays (though they should).
 }
-\section{Quirks}{
-I should mention that \code{offarray} (as of version 1.0.183) has a bad interaction with (a bug in) R{}'s byte-compiler--- so you have to turn off the byte-compiler to use \code{offarray} reliably. That can be done by running a tiny script; see \code{\link{offarray}} documentation for details. I use \code{offarray} all the time, and there are no problems after turning off the BC. At some point I will write some C code to get round it.
-
-One TMBO quirk at the moment is that I've had to do some epic fly-hacking in order to get TMBO's include path picked up by \code{TMB::compile}. It does work, but crikey... There are a couple of less devious ways to address that. Arguably the cleanest, would be to make compilation 3-phase rather than 2-phase at present; there would be \emph{two} successive CPP passes using \bold{only} TMBO headers, leading to a completely standard TMB file that's been full macro-expanded WRTO TMBO constructs, ie with no remaining mention of TMBO at all. (The file contents would be pretty ugly, though... but maybe that doesn't matter). The second way I can think of, is to set the TMBO header as an object-macro during invocation of the first CPP pass, and fixing "TMBO.h" to make sure that explicit paths are expanded into the hash-includes for the second pass. The third would be to hack the hash-includes before the second pass, during the R{} code that tidies up the CPP output. All these alternatives are more work than the fly-hacking, however. I don't think this "quirk" amounts to a risk for the future, because I certainly \emph{could} implement the first or third alternatives, and \emph{probably} could do the second.
+\section{Quirks}{One TMBO quirk at the moment is that I've had to do some epic fly-hacking in order to get TMBO's include path picked up by \code{TMB::compile}. It does work, but crikey... There are a couple of less devious ways to address that. Arguably the cleanest, would be to make compilation 3-phase rather than 2-phase at present; there would be \emph{two} successive CPP passes using \bold{only} TMBO headers, leading to a completely standard TMB file that's been full macro-expanded WRTO TMBO constructs, ie with no remaining mention of TMBO at all. (The file contents would be pretty ugly, though... but maybe that doesn't matter). The second way I can think of, is to set the TMBO header as an object-macro during invocation of the first CPP pass, and fixing "TMBO.h" to make sure that explicit paths are expanded into the hash-includes for the second pass. The third would be to hack the hash-includes before the second pass, during the R{} code that tidies up the CPP output. All these alternatives are more work than the fly-hacking, however. I don't think this "quirk" amounts to a risk for the future, because I certainly \emph{could} implement the first or third alternatives, and \emph{probably} could do the second.
 }
 \keyword{misc}

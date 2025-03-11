@@ -23,6 +23,7 @@
 
 #define HASH_DEFINE TMBO_NOTHING#define
 #define HASH_INCLUDE TMBO_NOTHING#include
+#define HASH_UNDEF TMBO_NOTHING#undef
 #define HASH_IF TMBO_NOTHING#if
 #define HASH_IFDEF TMBO_NOTHING#ifdef
 #define HASH_IFNDEF TMBO_NOTHING#ifndef
@@ -189,6 +190,38 @@ flubbadub calcs to circumvent stupid warnings, so you can't use it inside a para
 */ _CHIND__##x = _CHIND__##templatum; /*
 */
 
+
+/***
+Convenience 0-based for initial conversion to TMBO; does *not* convert to offarray in R
+***/
+#define VECTORZ( tipe, x, len) VECTORO( tipe, x, (0,len-1)); /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define DPN_VECTORZ( DP, numtype, x) /*
+*/ DP##_##numtype##VECTOR( x); /*
+*/ int FIRSTEL__##x=0; int _CHINDID__##x = 0; /*
+*/ MOST_VECTORO_DEFS( x) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define DATA_VECTORZ( x) DPN_VECTORZ( DATA, , x)
+#define DATA_IVECTORZ( x) DPN_VECTORZ( DATA, I, x)
+#define PARAMETER_VECTORZ( x) DPN_VECTORZ( PARAMETER, , x)
+
+/***
+  Workaround for TMB bug, presumably cozza some C++ bollox.
+  The following should work, but doesn't:
+  vector<Type> lglk_bits{LnL_POP1, LnL_POP2};
+  Nor does, but should, vector<Type> lglk_bits << a,b,...;
+  Using "<<" is key, but then gotta prespec the size of the goddamn vector, 
+  surely even C++ can work THAT out nope apparabloodymently not
+***/
+
+#define CREATE_AND_FILL_VECTORO( tipe, x, firstel, ...) \
+   VECTORO( tipe, x, (firstel, NARGS(__VA_ARGS__)+firstel-1)); x << __VA_ARGS__;
+
+
 /*** 
   Annoyingly, there's no matrix.dim "method" though there is for arrays. So we need to create yet another function-macro, _DIM__##x, to do that, depending on whether x is matrix or array.
   In theory, mebbe good to have a _DIM__##x(i) that checks 1 <= i <= length( dims( x)) using assert() etc. But that would mean work for me; and what's one more incomprehensible potential user-error within the grand scheme of TMB..?
@@ -262,9 +295,27 @@ HASH_DEFINE x( i,j) x( (i)-FIRSTEL__##x(0), (j)-FIRSTEL__##x(1))
 */ MATRIX1_pass2( tipe, x, DIMRANGE( templatum, 1), DIMRANGE( templatum, 2)) /*
 */ GENERAL_MATRIX_BODY( x)
 
+/***
+   Zero-based convenience version that *won't* convert to offarray in R
+***/
+#define MATRIXZ( tipe, x, l1, l2) MATRIXO( tipe, x, (0,l1-1), (0,l2-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/ HASH_UNDEF _HAS_CHINDID__##x /*
+*/
+
+#define DPN_MATRIXZ( DP, numtype, x) /*
+*/ DP##_##numtype##MATRIX( x); /*
+*/ vector<int> FIRSTEL__##x(2); FIRSTEL__##x.setZero(); /*
+*/ vector<int> _CHINDID__##x = FIRSTEL__##x; /*
+*/ GENERAL_MATRIX_BODY( x)
+
+#define DATA_MATRIXZ( x) DPN_MATRIXZ( DATA, , x)
+#define DATA_IMATRIXZ( x) DPN_MATRIXZ( DATA, I, x)
+#define PARAMETER_MATRIXZ( x) DPN_MATRIXZ( PARAMETER, , x)
+
 
 /*** ARRAYS HERE
-Details of ARRAYO_pass2_D<n>, EL<n>, in TMBO2 (boring...2); SET_ARRAY_CHINDS_D<n> here, in boring...1 
+Details of ARRAYO_pass2_D<n>, EL<n>, in TMBO2 (boring...2); SET_ARRAY_CHINDS_D<n> here, in boring...1
 ***/
 #include <boring_array_bits1.h>
 
@@ -284,9 +335,6 @@ Not bothering to create _NDIM__##x now, coz it can't be defined at declaration a
 #define DATA_ARRAYO( x) _metatype_ARRAYO( DATA_, x)
 #define DATA_IARRAYO( x) _metatype_ARRAYO( DATA_I, x)
 #define PARAMETER_ARRAYO( x) _metatype_ARRAYO( PARAMETER_, x)
-
-#define ARG20(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, ...) a20
-#define NARGS(...) ARG20(dummy, __VA_ARGS__, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 
 #define CONCAT(a, b) a ## b
 #define CONCAT2(a, b) CONCAT(a, b)
@@ -314,6 +362,49 @@ Not bothering to create _NDIM__##x now, coz it can't be defined at declaration a
 #define ARRAYO_sameshapeas( tipe, x, templatum) ARRAY1_sameshapeas( tipe, x, templatum) /*
 */ OFFARRAY( x) /*
 */
+
+/*** 
+2.4.30: Convenience versions from standard R arrays, that are 0-based in C but don't convert to offarray() if exported to R. For now, ndims must be user-specified; poor baby.
+***/
+
+#define ARRAYZ_1D( tipe, x, l1) /*
+*/ ARRAYO( tipe, x, (0,l1-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define ARRAYZ_2D( tipe, x, l1, l2) /*
+*/ ARRAYO( tipe, x, (0,l1-1), (0,l2-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define ARRAYZ_3D( tipe, x, l1, l2, l3) /*
+*/ ARRAYO( tipe, x, (0,l1-1), (0,l2-1), (0,l3-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define ARRAYZ_4D( tipe, x, l1, l2, l3, l4) /*
+*/ ARRAYO( tipe, x, (0,l1-1), (0,l2-1), (0,l3-1), (0,l4-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+#define ARRAYZ_5D( tipe, x, l1, l2, l3, l4, l5) /*
+*/ ARRAYO( tipe, x, (0,l1-1), (0,l2-1), (0,l3-1), (0,l4-1), (0,l5-1)) /*
+*/ HASH_UNDEF _IS_OFFARRAY__##x /*
+*/
+
+/***
+For DATA/PARAMETER arrays, we can avoid dim-specific definitions. The only way to extract the number of dimensions, I think, is via 'ar.dim.size()'
+***/
+#define DPN_ARRAYZ( DP, numtype, x) /*
+*/ DP##_##numtype##ARRAY( x); /*
+*/ vector<int> _CHINDID__##x = x.dim * 0; /*
+*/ vector<int> FIRSTEL__##x = _CHINDID__##x; /*
+*/ GENERAL_ARRAY_BODY( x) /*
+*/
+
+#define DATA_ARRAYZ( x) DPN_ARRAYZ( DATA, , x)
+#define DATA_IARRAYZ( x) DPN_ARRAYZ( DATA, I, x)
+#define PARAMETER_ARRAYZ( x) DPN_ARRAYZ( PARAMETER, , x)
 
 
 /*** CHARACTER INDICES ***/

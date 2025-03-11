@@ -1,5 +1,11 @@
-2.0.x: Fixed non-runningness of examples! Added OOBery (not yet for number of args)
-2.1.x: Tries to auto-detect correct compiler name, with optional user override in case that doesn't work; '?compile'.
-2.2.x: OOB messages are _really_ nice now :) And oh yes, compile() probably works on Linux too, now.
-2.3.x: fixed bug on matrix OOB checks
+2.4.30: Added convenience VECTORZ, MATRIXZ, ARRAYZ_<n>D for (initial) conversion from existing TMB and "vanilla" R. Also CREATE_AND_FILL_VECTORO macro.
+
 2.4.x: auto-attachment of TMB and offarray when and only when library(TMBO) is called; tweaks to FAQ, examples, doco
+
+2.3.x: fixed bug on matrix OOB checks
+
+2.2.x: OOB messages are _really_ nice now :) And oh yes, compile() probably works on Linux too, now.
+
+2.1.x: Tries to auto-detect correct compiler name, with optional user override in case that doesn't work; '?compile'.
+
+2.0.x: Fixed non-runningness of examples! Added OOBery (not yet for number of args)

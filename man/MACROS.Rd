@@ -73,6 +73,16 @@ Note that you mustn't try to associate a type with the \code{FUNCTOID}. It turns
   # MATRIX1_sameshapeas( tipe, x, template)
   # ARRAY1_sameshapeas( tipe, x, template)
   #
+  # VECTORZ( tipe, x, len)
+  # MATRIXZ( tipe, x, len1, len2)
+  # ARRAYZ_<n>D( tipe, x, len1, ...)
+  #
+  # ## One-step create-and-fill, without having to count the elements:
+  #
+  # CREATE_AND_FILL_VECTORO( tipe, x, firstel, ...)
+  # ## ... then x( firstel) will hold the first "..." value, and so on.
+  # ## ... need to add an Example for this!
+  #
   # # Declaring ranges
   #
   # ICONSEQ( inds)
